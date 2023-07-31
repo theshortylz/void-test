@@ -25,4 +25,4 @@ Instalation:
 4- Run the app
   - npm run start:dev
 
-
+5- Use the "Void Test.postman_collection" to get the postman collection routes.
