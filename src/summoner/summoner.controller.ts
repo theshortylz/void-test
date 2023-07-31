@@ -9,12 +9,12 @@ import { SummonerService, SummonerInfo } from './summoner.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @Controller('summoner')
-@ApiTags('Player')
+@ApiTags('Summoner')
 export class SummonerController {
   constructor(private readonly summonerService: SummonerService) {}
 
   @ApiOperation({
-    summary: 'Get user by ID',
+    summary: 'Get summoner by ID',
     description: 'Retrieve user information by ID',
   })
   @Get('/:region/:name')
@@ -33,7 +33,7 @@ export class SummonerController {
   }
 
   @ApiOperation({
-    summary: 'Get user by QueueId',
+    summary: 'Get summoner by QueueId',
     description: 'Retrieve user information by QueueID',
   })
   @Get('/:region/:name/:queueId')

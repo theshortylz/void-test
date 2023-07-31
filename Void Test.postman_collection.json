@@ -1,0 +1,104 @@
+{
+	"info": {
+		"_postman_id": "7c5813e2-a619-4762-aa95-46c02b7f4d32",
+		"name": "Void Test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "21532712"
+	},
+	"item": [
+		{
+			"name": "Endpoints",
+			"item": [
+				{
+					"name": "SummonerByName",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:3000/summoner/la2/Gooooooot",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"summoner",
+								"la2",
+								"Gooooooot"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SummonerByQueue",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:3000/summoner/la2/Gooooooot/420",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"summoner",
+								"la2",
+								"Gooooooot",
+								"420"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "MatchesByName",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:3000/matches/la2/Gooooooot",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"matches",
+								"la2",
+								"Gooooooot"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "MatchesByQueue",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "LeaderboardByName",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:3000/leaderboard/la2/Gooooooot",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"leaderboard",
+								"la2",
+								"Gooooooot"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

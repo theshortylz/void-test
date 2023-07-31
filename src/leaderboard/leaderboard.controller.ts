@@ -1,7 +1,9 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { LeaderboradService, Leaderboard } from './leaderboard.service';
+import { ApiTags } from '@nestjs/swagger';
 
 @Controller('leaderboard')
+@ApiTags('Leaderboard')
 export class LeaderboardController {
   constructor(private readonly leaderboardService: LeaderboradService) {}
 
