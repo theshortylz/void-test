@@ -36,6 +36,7 @@ NPM (Node Package Manager) o Yarn
 4- I'll provide the docker-compose file for local testing.
 
 Running the app
+
 1- Deploy the application and the database:
 - npm run void-test (in the console)
 
