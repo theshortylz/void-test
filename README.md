@@ -18,6 +18,7 @@ Make sure that you have Node.js installed. https://nodejs.org/
 NPM (Node Package Manager) o Yarn
 
 **Instalation:** 
+
 1- Clone the repository
 - git clone https://github.com/GermanSmigoski/Void-test.git
 
