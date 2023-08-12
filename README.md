@@ -1,28 +1,43 @@
 
-Void Test
+**"RiotGames API Backend Test Suite 🎮🔍**
 
-This project is a backend application that provides three endpoints to consume data from an external API and store it in a database. The application allows users to query information about League of Legends players, such as their summoner details, match history, and leaderboard rankings. The retrieved data is then saved in a local database for efficient access and future reference. With these endpoints, users can easily access and manage player data for further analysis or display.
+Welcome to the RiotGames API Backend Test Suite repository! This project focuses on robust testing strategies for interacting with the Riot Games API, allowing developers to seamlessly gather and manage data related to League of Legends players. Through a trio of meticulously crafted endpoints, this backend application fetches data from the Riot Games API, storing it within a local database for efficient retrieval and future reference.
 
-previous requirements
-Before you begin, make sure you have the following installed:
+**Key Features:**
 
-Node.js (versión X.X.X): https://nodejs.org/
+🌐 Seamlessly retrieve data from the Riot Games API, including summoner details, match history, and competitive rankings.
+📊 Effortlessly manage player data through well-defined endpoints, fostering analytical insights and user-friendly presentations.
+📁 Test suite tailored to ensure the reliability, accuracy, and functionality of API interactions.
+🚀 Simplified deployment using provided docker-compose configurations for local testing.
+Requirements:
+Before embarking on your testing journey, ensure you have Node.js installed, and either NPM or Yarn as your package manager of choice.
+
+**Requirements before start:**
+
+Make sure that you have Node.js installed. https://nodejs.org/
 NPM (Node Package Manager) o Yarn
 
-Instalation: 
+**Instalation:** 
 1- Clone the repository
-  - git clone https://github.com/GermanSmigoski/Void-test.git
+- git clone https://github.com/GermanSmigoski/Void-test.git
+
 2- Download dependecies
-  - npm install (in the console)
-3- create a .env file
-   -API_KEY=API_KEY
-   -DB_USER=DB_USER
-   -DB_PASSWORD=DB_PASSWORD
-   -DB_HOST=DB_HOST
-   -DB_PORT=DB_PORT
-   -DB_DATABASE=DB_NAME
+- npm install (in the console)
 
-4- Run the app
-  - npm run start:dev
+3- Create a .env file in the project root directory with the following environment variables:
+- API_KEY: Your Riot Games API key obtained from the [Riot Games Developer Website](https://developer.riotgames.com).
+- DB_USER: Your PostgreSQL database username.
+- DB_PASSWORD: Your PostgreSQL database password.
+- DB_HOST: The hostname where your PostgreSQL database is hosted (e.g., localhost).
+- DB_PORT: The port on which your PostgreSQL database is running (e.g., 5432).
+- DB_DATABASE: The name of the database to be used.
 
-5- Use the "Void Test.postman_collection" to get the postman collection routes.
+4- I'll provide the docker-compose file for local testing.
+
+Running the app
+1- Deploy the application and the database:
+- npm run void-test
+
+**Using the Postman Collection:**
+
+After running the application and ensuring that it's connected to the database, you can utilize the "void-test.postman_collection" to access predefined routes via Postman. This collection includes routes that correspond to the application's endpoints, allowing you to interact with the API and observe its functionality.

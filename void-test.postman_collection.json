@@ -1,0 +1,207 @@
+{
+	"info": {
+		"_postman_id": "9d8be473-2d56-4ba9-ad70-04c7243daa59",
+		"name": "Void Test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "27272257",
+		"_collection_link": "https://backendpihe.postman.co/workspace/My-Workspace~41e88c77-5a2e-4c0e-88d3-ecb210bbb532/collection/27272257-9d8be473-2d56-4ba9-ad70-04c7243daa59?action=share&source=collection_link&creator=27272257"
+	},
+	"item": [
+		{
+			"name": "Summoner",
+			"item": [
+				{
+					"name": "GetRequests",
+					"item": [
+						{
+							"name": "SummonerByName",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:3000/summoner/la1/SRHSebas",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"summoner",
+										"la1",
+										"SRHSebas"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "SummonerByQueue",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:3000/summoner/la1/SRHSebas/420",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"summoner",
+										"la1",
+										"SRHSebas",
+										"420"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Matches",
+			"item": [
+				{
+					"name": "GetRequests",
+					"item": [
+						{
+							"name": "MatchesByName",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:3000/matches/la1/SRHSebas",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"matches",
+										"la1",
+										"SRHSebas"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "MatchesByQueue",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:3000/matches/la1/SRHSebas/420",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"matches",
+										"la1",
+										"SRHSebas",
+										"420"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Leaderboar",
+			"item": [
+				{
+					"name": "GetRequests",
+					"item": [
+						{
+							"name": "LeaderboardByDivision&ID",
+							"request": {
+								"auth": {
+									"type": "apikey",
+									"apikey": [
+										{
+											"key": "value",
+											"value": "RGAPI-ccdf42b4-32fa-4b32-a771-003e6dec0dfb",
+											"type": "string"
+										},
+										{
+											"key": "key",
+											"value": "api_key",
+											"type": "string"
+										},
+										{
+											"key": "in",
+											"value": "query",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:3000/leaderboard/DIAMOND/I",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"leaderboard",
+										"DIAMOND",
+										"I"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "LeaderboardByLevel",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:3000/leaderboard/level",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"leaderboard",
+										"level"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "LeaderboardByKda",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "localhost:3000/leaderboard/kda",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"leaderboard",
+										"kda"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	]
+}

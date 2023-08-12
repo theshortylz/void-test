@@ -11,7 +11,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 @Controller('summoner')
 @ApiTags('Summoner')
 export class SummonerController {
-  constructor(private readonly summonerService: SummonerService) {}
+  constructor(private readonly summonerService: SummonerService) { }
 
   @ApiOperation({
     summary: 'Get summoner by ID',

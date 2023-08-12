@@ -20,6 +20,7 @@ enum QueueId {
 @Controller('matches')
 export class MatchesController {
   constructor(private readonly riotApiService: RiotApiService) {}
+
   @Get(':region/:name')
   async getMatches(
     @Param('region') region: string,
@@ -33,6 +34,7 @@ export class MatchesController {
       return res.status(500).json({ error: 'Error fetching match data' });
     }
   }
+
   @Get('/:region/:name/:queueId')
   @ApiParam({ name: 'region', enum: ['euw', 'na', 'kr', 'eune'] }) // Enum for region
   @ApiParam({ name: 'queueId', enum: QueueId }) // Enum for queueId

@@ -1,28 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import axios from 'axios';
-import * as dotenv from 'dotenv';
 import { GameType } from 'src/utils/gameTypes';
 import { SummonerEntity } from './summoner.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RegionMapping } from 'src/utils/regionsTypes';
-dotenv.config();
-
-const gameTypeByValue: { [key: number]: string } = {};
-
-for (const key in GameType) {
-  if (isNaN(Number(key))) {
-    const value = GameType[key as keyof typeof GameType];
-    gameTypeByValue[value] = key;
-  }
-}
-
-function getGameType(gameTypeId: number): string {
-  return gameTypeByValue[gameTypeId] || 'Unknown';
-}
 
 export interface SummonerInfo {
-  name: string;
+  summonerName: string;
   level: number;
   profileIconId: number;
   region: string;
@@ -34,7 +19,7 @@ export interface SummonerInfo {
   queueInfo: QueueInfoItem[];
 }
 export interface QueueInfoItem {
-  currentLeagepoints: number;
+  currentLeaguePoints: number;
   queueType: string;
   summonerRank: string;
   summonerTier: string;
@@ -42,13 +27,21 @@ export interface QueueInfoItem {
   losses: number;
 }
 
-function getGameTypeFromName(gameTypeName: string): number | undefined {
-  for (const [key, value] of Object.entries(GameType)) {
-    if (key === gameTypeName) {
-      return value as number;
-    }
+const gameTypeByValue: { [key: number]: string } = {};
+
+for (const key in GameType) {
+  if (isNaN(Number(key))) {
+    const value = GameType[key as keyof typeof GameType];
+    gameTypeByValue[value] = key;
   }
-  return undefined;
+}
+
+function getGameType(gameTypeId: number): string {
+  if (!gameTypeByValue[gameTypeId]) {
+    throw new NotFoundException(`Game with id ${gameTypeId} not found.`);
+  }
+
+  return gameTypeByValue[gameTypeId];
 }
 
 @Injectable()
@@ -56,130 +49,129 @@ export class SummonerService {
   constructor(
     @InjectRepository(SummonerEntity)
     private readonly summonerRepository: Repository<SummonerEntity>,
-  ) {}
+  ) { }
 
-  private getRegionName(regionCode: string): string {
-    const regionName = RegionMapping[regionCode as keyof typeof RegionMapping];
-    return regionName || 'unknown';
+  async getAllSummoners(): Promise<SummonerEntity[]> {
+    return await this.summonerRepository.find();
   }
 
-  private async getSummonerFromDB(
+  async getSummonerFromDB(
     name: string,
-    region: string,
-  ): Promise<SummonerInfo | null> {
+    region: string
+  ) {
     const summonerInfo = await this.summonerRepository.findOne({
-      where: { summonerName: name },
+      where: { summonerName: name }
     });
 
-    if (
-      !summonerInfo ||
-      !summonerInfo.queueInfo ||
-      summonerInfo.queueInfo.length === 0
-    ) {
+    if (!summonerInfo || !summonerInfo.queueInfo || summonerInfo.queueInfo.length === 0) {
       return null;
     }
 
-    return {
-      name: summonerInfo.summonerName,
+    const summonerFormattedInfo: SummonerInfo = {
+      summonerName: summonerInfo.summonerName,
       profileIconId: summonerInfo.profileIconId,
-      level: summonerInfo.summonerLevel,
+      level: summonerInfo.level,
       region: region,
       puuid: summonerInfo.puuid,
-      kda: summonerInfo.kda,
-      averageCsPerMinute:
-        summonerInfo.minionsKilled / summonerInfo.minutesPlayed,
-      averageVisionScore: summonerInfo.totalVision / summonerInfo.gamesPlayed,
+      kda: summonerInfo.kda || 0,
+      averageCsPerMinute: summonerInfo.minutesPlayed !== 0 ? summonerInfo.minionsKilled / summonerInfo.minutesPlayed : 0,
+      averageVisionScore: summonerInfo.gamesPlayed !== 0 ? summonerInfo.totalVision / summonerInfo.gamesPlayed : 0,
       accountId: summonerInfo.accountId,
-      queueInfo: summonerInfo.queueInfo.map((el) => ({
-        currentLeagepoints: el.currentLeagepoints,
-        queueType: el.queueType,
-        summonerRank: el.summonerRank,
-        summonerTier: el.summonerTier,
-        wins: el.wins,
-        losses: el.losses,
-      })),
+      queueInfo: summonerInfo.queueInfo.map(item => ({
+        currentLeaguePoints: item.currentLeaguePoints,
+        queueType: item.queueType,
+        summonerRank: item.summonerRank,
+        summonerTier: item.summonerTier,
+        wins: item.wins,
+        losses: item.losses
+      }))
     };
+
+    return summonerFormattedInfo;
   }
 
-  private async saveSummonerToDB(summonerInfo: SummonerInfo): Promise<void> {
-    const queueInfoArray: QueueInfoItem[] = summonerInfo.queueInfo.map(
-      (el) => ({
-        currentLeagepoints: el.currentLeagepoints,
-        queueType: el.queueType,
-        summonerRank: el.summonerRank,
-        summonerTier: el.summonerTier,
-        wins: el.wins,
-        losses: el.losses,
+  private async saveSummonerInfoToDB(payload: SummonerInfo): Promise<void> {
+    const queueInfoArray: QueueInfoItem[] = payload.queueInfo.map(
+      (item) => ({
+        currentLeaguePoints: item.currentLeaguePoints,
+        queueType: item.queueType,
+        summonerRank: item.summonerRank,
+        summonerTier: item.summonerTier,
+        wins: item.wins,
+        losses: item.losses,
       }),
     );
-    const summonerEntity = new SummonerEntity();
-    summonerEntity.puuid = summonerInfo.puuid;
-    summonerEntity.summonerName = summonerInfo.name;
-    summonerEntity.summonerLevel = summonerInfo.level;
-    summonerEntity.profileIconId = summonerInfo.profileIconId;
-    summonerEntity.accountId = summonerInfo.accountId;
-    summonerEntity.region = summonerInfo.region;
-    summonerEntity.queueInfo = queueInfoArray;
 
-    await this.summonerRepository.save(summonerEntity);
+    const summonerInfo: SummonerInfo = {
+      ...payload,
+
+      queueInfo: queueInfoArray,
+    };
+
+    console.log(summonerInfo);
+    await this.summonerRepository.save(summonerInfo);
   }
 
   async getSummonerInfo(region: string, name: string): Promise<SummonerInfo> {
+    region = region.toLowerCase();
     const summonerFromDB = await this.getSummonerFromDB(name, region);
+
     if (summonerFromDB) {
       return summonerFromDB;
     } else {
-      const riotApiKey = process.env.API_KEY;
-      const apiSummonerUrl = `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${name}?api_key=${riotApiKey}`;
-      try {
-        const summonerResponse = await axios.get(apiSummonerUrl);
-        const summonerId = summonerResponse.data.id;
-        const accountId = summonerResponse.data.accountId;
-        const summonerLevel = summonerResponse.data.summonerLevel;
-        const profileIconId = summonerResponse.data.profileIconId;
-        const puuid = summonerResponse.data.puuid;
+      console.log(
+        `Summoner in region ${region} with name ${name} not found on db. Connecting to riot...`
+      );
+      return await this.getSummonerRiotConnection(region, name);
+    }
+  }
 
-        const entriesApi = `https://${region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${summonerId}?api_key=${riotApiKey}`;
+  async getSummonerRiotConnection(region: string, name: string): Promise<SummonerInfo> {
+    const apiKeyRiot = process.env.API_KEY;
+    const apiSummonerUrl = `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${name}?api_key=${apiKeyRiot}`;
 
-        const rankAndTierResponse = await axios
-          .get(entriesApi)
-          .then((res) => res.data);
+    try {
+      const response = await axios.get(apiSummonerUrl);
 
-        const summonerApiInfo: QueueInfoItem[] = [];
+      const summonerInfo: SummonerInfo = {
+        summonerName: response.data.name,
+        profileIconId: response.data.profileIconId,
+        level: response.data.summonerLevel,
+        region,
+        puuid: response.data.puuid,
+        accountId: response.data.accountId,
+        kda: 0,
+        averageCsPerMinute: 0,
+        averageVisionScore: 0,
+        queueInfo: null
+      };
 
-        for (const info of rankAndTierResponse) {
-          const queueInfoItem: QueueInfoItem = {
-            summonerRank: info.rank,
-            summonerTier: info.tier,
-            queueType: info.queueType,
-            currentLeagepoints: info.leaguePoints,
-            wins: info.wins,
-            losses: info.losses,
-          };
+      const entriesApi = `https://${region}.api.riotgames.com/lol/league/v4/entries/by-summoner/${response.data.id}?api_key=${apiKeyRiot}`;
 
-          summonerApiInfo.push(queueInfoItem);
-        }
+      const rankAndTierResponse = await axios.get(entriesApi);
 
-        const summonerInfo: SummonerInfo = {
-          name: name,
-          profileIconId: profileIconId,
-          level: summonerLevel,
-          region: region,
-          puuid: puuid,
-          accountId: accountId,
-          kda: 0,
-          averageCsPerMinute: 0,
-          averageVisionScore: 0,
-          queueInfo: summonerApiInfo,
+      const summonerApiInfo: QueueInfoItem[] = [];
+
+      for (const info of rankAndTierResponse.data) {
+        const queueInfoItem: QueueInfoItem = {
+          summonerRank: info.rank,
+          summonerTier: info.tier,
+          queueType: info.queueType,
+          currentLeaguePoints: info.leaguePoints,
+          wins: info.wins,
+          losses: info.losses,
         };
 
-        await this.saveSummonerToDB(summonerInfo);
-
-        return summonerInfo;
-      } catch (error) {
-        console.error('Error fetching summoner:', error);
-        throw new Error('Failed to get summoner information');
+        summonerApiInfo.push(queueInfoItem);
       }
+
+      summonerInfo.queueInfo = summonerApiInfo;
+
+      await this.saveSummonerInfoToDB(summonerInfo);
+
+      return summonerInfo;
+    } catch (error) {
+      console.error('Error fetching summoner:', error);
     }
   }
 
@@ -192,17 +184,14 @@ export class SummonerService {
     const typeGame = getGameType(queueId);
 
     const filteredQueueInfo = summoners.queueInfo.filter(
-      (queue) => queue.queueType === typeGame,
+      (item) => item.queueType === typeGame,
     );
 
-    if (filteredQueueInfo.length > 0) {
-      const filteredSummonerQueue: SummonerInfo = {
-        ...summoners,
-        queueInfo: filteredQueueInfo,
-      };
-      return filteredSummonerQueue;
-    } else {
-      return null;
-    }
+    const filteredSummonerQueue: SummonerInfo = {
+      ...summoners,
+      queueInfo: (!filteredQueueInfo || filteredQueueInfo.length === 0) ? null : filteredQueueInfo,
+    };
+
+    return filteredSummonerQueue;
   }
 }

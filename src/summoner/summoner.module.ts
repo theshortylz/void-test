@@ -8,5 +8,6 @@ import { SummonerService } from './summoner.service';
   imports: [TypeOrmModule.forFeature([SummonerEntity])],
   controllers: [SummonerController],
   providers: [SummonerService],
+  exports: [SummonerService]
 })
-export class SummonerModule {}
+export class SummonerModule { }

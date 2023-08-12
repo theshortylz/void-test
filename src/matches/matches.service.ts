@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 import { RegionMapping } from 'src/utils/regionsTypes';
 import { GameType } from 'src/utils/gameTypes';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { NumericType, Repository } from 'typeorm';
 import { MatchEntity } from './matches.entity';
 import { runesData } from 'src/utils/runes.types';
 import { SummonerEntity } from 'src/summoner/summoner.entity';
@@ -67,24 +67,26 @@ export class RiotApiService {
     @InjectRepository(MatchEntity)
     private readonly matchRepository: Repository<MatchEntity>,
     @InjectRepository(SummonerEntity)
-    private readonly summonerStatsRepository: Repository<SummonerEntity>,
-  ) {}
+    private readonly summonerRepository: Repository<SummonerEntity>,
+  ) { }
 
   private getRegionName(regionCode: string): string {
     const regionName = RegionMapping[regionCode as keyof typeof RegionMapping];
-    return regionName || 'unknown';
+    return regionName || 'Unknown';
   }
 
   async getMatches(region: string, name: string): Promise<MatchEntity[]> {
-    const riotApiKey = process.env.API_KEY;
-    const apiSummonerUrl = `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${name}?api_key=${riotApiKey}`;
+    const apiKeyRiot = process.env.API_KEY;
+    const minMatches = 0;
+    const maxMatches = 20;
+    const apiSummonerUrl = `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${name}?api_key=${apiKeyRiot}`;
     const regionName = this.getRegionName(region);
     const matchesSummonerUrl = `https://${regionName}.api.riotgames.com/lol/match/v5/matches/by-puuid`;
 
     try {
       const summonerResponse = await axios.get(apiSummonerUrl);
       const summonerPuuid = summonerResponse.data.puuid;
-      const summonerMatchesUrl = `${matchesSummonerUrl}/${summonerPuuid}/ids?start=0&count=20&api_key=${riotApiKey}`;
+      const summonerMatchesUrl = `${matchesSummonerUrl}/${summonerPuuid}/ids?start=${minMatches}&count=${maxMatches}&api_key=${apiKeyRiot}`;
 
       const response = await axios.get(summonerMatchesUrl);
       const matchIds: string[] = response.data;
@@ -100,7 +102,7 @@ export class RiotApiService {
         if (savedMatches.length > 0) {
           matches.push(...savedMatches);
         } else {
-          const matchUrl = `https://${regionName}.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${riotApiKey}`;
+          const matchUrl = `https://${regionName}.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${apiKeyRiot}`;
           const matchResponse = await axios.get(matchUrl);
           const matchData = matchResponse.data;
 
@@ -112,6 +114,7 @@ export class RiotApiService {
               (participant.kills + participant.assists) /
               Math.max(1, participant.deaths)
             ).toFixed(2);
+
             const primaryStyle = participant.perks.styles.find(
               (style: any) => style.description === 'primaryStyle',
             );
@@ -138,7 +141,7 @@ export class RiotApiService {
               },
             );
 
-            const summonerEntity = await this.summonerStatsRepository.findOne({
+            const summonerEntity = await this.summonerRepository.findOne({
               where: { puuid: participant.puuid },
             });
 
@@ -151,36 +154,34 @@ export class RiotApiService {
               summonerEntity.minutesPlayed += matchData.info.gameDuration;
               summonerEntity.gamesPlayed += 1;
 
-              const newKills = summonerEntity.kills;
-              const newDeaths = summonerEntity.deaths;
-              const newAssists = summonerEntity.assists;
-              const kda = (
-                (newKills + newAssists) /
-                Math.max(1, newDeaths)
-              ).toFixed(2);
-              summonerEntity.kda = parseFloat(kda);
+              summonerEntity.kda =
+                this.calculateKDA(
+                  summonerEntity.kills,
+                  summonerEntity.deaths,
+                  summonerEntity.assists
+                );
 
-              await this.summonerStatsRepository.save(summonerEntity);
+              await this.summonerRepository.save(summonerEntity);
             } else {
-              const newSummonerEntity = new SummonerEntity();
-              newSummonerEntity.puuid = participant.puuid;
-              newSummonerEntity.summonerName = participant.summonerName;
-              newSummonerEntity.kills = participant.kills;
-              newSummonerEntity.deaths = participant.deaths;
-              newSummonerEntity.assists = participant.assists;
-              newSummonerEntity.totalVision = participant.totalVisionScore;
-              newSummonerEntity.minionsKilled = participant.totalMinionsKilled;
-              newSummonerEntity.minutesPlayed = participant.gameDuration;
-              const kda = (
-                (participant.kills + participant.assists) /
-                Math.max(1, participant.deaths)
-              ).toFixed(2);
-              newSummonerEntity.kda = parseFloat(kda);
-
-              await this.summonerStatsRepository.save(newSummonerEntity);
-              await this.summonerStatsRepository.save(
-                summonerEntity || newSummonerEntity,
+              const newSummonerEntity: SummonerEntity = {
+                ...summonerEntity,
+                puuid: participant.puuid,
+                summonerName: participant.summonerName,
+                kills: participant.kills,
+                deaths: participant.deaths,
+                assists: participant.assists,
+                totalVision: participant.totalVisionScore,
+                minionsKilled: participant.totalMinionsKilled,
+                minutesPlayed: participant.gameDuration,
+              }
+              newSummonerEntity.kda = this.calculateKDA(
+                newSummonerEntity.kills,
+                newSummonerEntity.deaths,
+                newSummonerEntity.kda
               );
+
+
+              await this.summonerRepository.save(newSummonerEntity);
             }
 
             const playerData: PlayerData = {
@@ -219,6 +220,7 @@ export class RiotApiService {
           matches.push(matchEntity);
         }
       }
+
       const matchesJson: any[] = [];
 
       for (const match of matches) {
@@ -231,12 +233,14 @@ export class RiotApiService {
         };
         matchesJson.push(matchJson);
       }
+
       return matchesJson;
     } catch (error) {
       console.error('Error fetching match data:', error);
       throw new Error('Error fetching match data');
     }
   }
+
   async getSummonerByNameWithQueueId(
     region: string,
     name: string,
@@ -249,5 +253,13 @@ export class RiotApiService {
     );
 
     return filteredMatches;
+  }
+
+  private calculateKDA(kills: number, deaths: number, assists: number): number {
+    const kda = (
+      (kills + assists) /
+      Math.max(1, deaths)
+    ).toFixed(2);
+    return parseFloat(kda);
   }
 }

@@ -1,106 +1,87 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import axios from 'axios';
-import * as dotenv from 'dotenv';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SummonerEntity } from 'src/summoner/summoner.entity';
+import { divisions, tiers, LeaderboardEntity } from './leaderboard.entity';
+import { SummonerService } from '../summoner/summoner.service';
 
-dotenv.config();
-
-export interface Leaderboard {
+export class Leaderboard {
   summonerName: string;
   wins: number;
   losses: number;
-  winRate: string;
   leaguePoints: number;
-  tier: string[];
-  rank: string;
+  tier: tiers;
+  rank: divisions;
 }
+
+export interface KDA {
+  summonerName: string,
+  puuid: string,
+  kills: number,
+  deaths: number
+  assists: number,
+  kda: number,
+  gamesPlayed: number
+}
+
 
 @Injectable()
 export class LeaderboradService {
   constructor(
-    @InjectRepository(SummonerEntity)
-    private readonly summonerRepository: Repository<SummonerEntity>,
-  ) {}
+    private summonerService: SummonerService,
+    @InjectRepository(LeaderboardEntity)
+    private readonly leaderboardRepository: Repository<LeaderboardEntity>,
+  ) { }
 
-  async getSummonersDb(name: string): Promise<SummonerEntity[]> {
-    const dbInfo = await this.summonerRepository.find();
+  async getLeaderboardRanked5x5(
+    division: string,
+    tier: string): Promise<Leaderboard[]> {
+    const apiKeyRiot = process.env.API_KEY;
+    const apiRiotURL = `https://la1.api.riotgames.com/lol/league/v4/entries/RANKED_SOLO_5x5/${division}/${tier}?page=1&api_key=${apiKeyRiot}`;
+    try {
+      const response = await axios.get(apiRiotURL);
 
-    const filteredDbInfo = dbInfo.filter((info) => info.queueInfo !== null);
+      const leaderboard: Leaderboard[] = [];
 
-    return filteredDbInfo;
+      for (const ranking of response.data) {
+        const leaderboardItem: Leaderboard = {
+          summonerName: ranking.summonerName,
+          rank: ranking.rank,
+          tier: ranking.tier,
+          leaguePoints: ranking.leaguePoints,
+          losses: ranking.losses,
+          wins: ranking.wins,
+        };
+
+        leaderboard.push(leaderboardItem);
+      }
+
+      for (let index = 0; index < 5; index++) {
+        const summoner = await this.summonerService.getSummonerInfo('la1', leaderboard[index].summonerName);
+        if (!summoner) {
+          console.log('Summoner not found. ', leaderboard[index].summonerName)
+        }
+      }
+
+      const sortedRankings = leaderboard.sort((a, b) => b.leaguePoints - a.leaguePoints)
+      return this.leaderboardRepository.save(sortedRankings);
+    } catch (error) {
+      throw new BadRequestException(error);
+    }
   }
 
-  async getPlayersID(name: string, region: string): Promise<any[]> {
-    const tiersOrder = [
-      'CHALLENGER',
-      'GRANDMASTER',
-      'MASTER',
-      'DIAMOND',
-      'PLATINUM',
-      'GOLD',
-      'SILVER',
-      'BRONZE',
-      'IRON',
-    ];
+  async filterSummonersByKDA(): Promise<SummonerEntity[] | null> {
+    const filteredAndSortedSummonerInfo = (await this.summonerService.getAllSummoners())
+      .filter((summoner) => summoner.kda > 0)
+      .sort((a, b) => b.kda - a.kda);
+    return filteredAndSortedSummonerInfo;
+  }
 
-    const summoners = await this.getSummonersDb(name);
-    console.log(summoners);
-    const validSummoners = summoners.filter(
-      (summoner) =>
-        summoner.queueInfo &&
-        summoner.queueInfo.some((queue) =>
-          tiersOrder.includes(queue.summonerTier),
-        ),
-    );
-
-    validSummoners.sort((a, b) => {
-      const tierOrderA = tiersOrder.indexOf(a.queueInfo[0].summonerTier);
-      const tierOrderB = tiersOrder.indexOf(b.queueInfo[0].summonerTier);
-
-      if (tierOrderA !== tierOrderB) {
-        return tierOrderB - tierOrderA;
-      } else {
-        const pointsA = Math.max(
-          ...a.queueInfo.map((queue) => queue.currentLeagepoints),
-        );
-        const pointsB = Math.max(
-          ...b.queueInfo.map((queue) => queue.currentLeagepoints),
-        );
-        return pointsB - pointsA;
-      }
-    });
-
-    const leaderboard = validSummoners.map((summoner, index) => {
-      const queueInfo = summoner.queueInfo.map((queue) => ({
-        summonerTier: queue.summonerTier,
-        summonerRank: queue.summonerRank,
-        currentLeagepoints: queue.currentLeagepoints,
-        queueType: queue.queueType,
-        wins: queue.wins,
-        losses: queue.losses,
-      }));
-
-      const totalWins = summoner.queueInfo.reduce(
-        (total, queue) => total + queue.wins,
-        0,
-      );
-      const totalLosses = summoner.queueInfo.reduce(
-        (total, queue) => total + queue.losses,
-        0,
-      );
-      const totalGames = totalWins + totalLosses;
-      const winRate = (totalWins / totalGames) * 100;
-
-      return {
-        position: index + 1,
-        summonerName: summoner.summonerName,
-        queueInfo: queueInfo,
-        winRate: `${winRate.toFixed(2)}%`,
-      };
-    });
-
-    return leaderboard;
+  async filterSummonersByLevel(): Promise<SummonerEntity[] | null> {
+    const filteredAndSortedSummonerInfo = (await this.summonerService.getAllSummoners())
+      .filter((summoner) => summoner.level > 0)
+      .sort((a, b) => b.level - a.level);
+    return filteredAndSortedSummonerInfo;
   }
 }
