@@ -19,7 +19,7 @@ NPM (Node Package Manager) o Yarn
 
 **Instalation:** 
 
-1- Clone the repository
+1- Clone the repository (in the console)
 - git clone https://github.com/GermanSmigoski/Void-test.git
 
 2- Download dependecies
@@ -37,7 +37,7 @@ NPM (Node Package Manager) o Yarn
 
 Running the app
 1- Deploy the application and the database:
-- npm run void-test
+- npm run void-test (in the console)
 
 **Using the Postman Collection:**
 
